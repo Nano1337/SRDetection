@@ -85,9 +85,11 @@ def make_dataset(img_dir, mask_dir):
                                 transform=transforms.Compose([
                                     transforms.ToTensor(), 
                                     transforms.RandomVerticalFlip(p=0.5),
-                                    transforms.RandomHorizontalFlip(p=0.5)]))
-
+                                    transforms.RandomHorizontalFlip(p=0.5), 
+                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]    
+                                ))
     return prepared_dataset
+
 def create_dataloaders(img_dir, mask_dir, batch_size):
     ''' Creates dataloaders for training, validation, and testing '''
 
