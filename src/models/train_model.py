@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 num_epochs = 1
 initial_lr = 0.001
-batch_size = 32
+batch_size = 4
 
 if __name__ == '__main__':
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
             num_steps += 1
 
             if i % 5 == 0:
-                print("Epoch: {}, Step: {}, Loss: {}".format(epoch, i, -loss.item()))
+                print("Epoch: {}, Step: {}, Loss: {}".format(epoch, i, loss.item()))
 
         train_loss_total_avg = train_loss_total / num_steps
         # run validation loop for one epoch
