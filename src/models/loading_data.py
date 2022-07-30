@@ -109,7 +109,7 @@ def create_dataloaders(img_dir, mask_dir, batch_size):
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
 
-    return train_dataset, val_dataset, test_dataset
+    return train_loader, val_loader, test_loader
 
 if __name__ == "__main__": 
     img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
@@ -119,3 +119,4 @@ if __name__ == "__main__":
     # show_batch(img_dir, mask_dir)
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size=4)
+    print(len(iter(train_loader).next()[0])) # shows the batch size of images
