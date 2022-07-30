@@ -52,9 +52,10 @@ class SRDataset(Dataset):
 
         # apply transformations if any
         if self.transform: 
-            sample = self.transform(sample)
+            img = self.transform(sample['image'])
+            mask = self.transform(sample['mask'])
         
-        return sample
+        return img, mask
 
 def show_batch(img_dir, mask_dir):
     ''' Shows a batch of 4 images and their masks overlayed '''
@@ -65,13 +66,13 @@ def show_batch(img_dir, mask_dir):
     for i in range(len(sr_dataset)):
         sample = sr_dataset[i]
 
-        print(i, sample['image'].shape, sample['mask'].shape)
+        print(i, sample[0].shape, sample[1].shape)
 
         ax = plt.subplot(1, 4, i + 1)
         plt.tight_layout()
         ax.set_title('Sample #{}'.format(i))
         ax.axis('off')
-        show_image(**sample)
+        show_image(sample[0], sample[1])
 
         if i == 3:
             plt.show()
@@ -87,7 +88,11 @@ def make_dataset(img_dir, mask_dir):
                                     transforms.RandomHorizontalFlip(p=0.5)]))
 
     return prepared_dataset
-def create_dataloaders(full_dataset, batch_size):
+def create_dataloaders(img_dir, mask_dir, batch_size):
+    ''' Creates dataloaders for training, validation, and testing '''
+
+    full_dataset = make_dataset(img_dir, mask_dir)
+
     train_size = int(0.8 * len(full_dataset))
     test_size = len(full_dataset) - train_size
 
@@ -110,6 +115,7 @@ if __name__ == "__main__":
     img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
     mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
 
-    dataset = make_dataset(img_dir, mask_dir)
-    train_dataset, val_dataset, test_dataset = create_dataloaders(dataset, batch_size=4)
-    print(test_dataset.__len__())
+    # # visualize batch of images and masks
+    # show_batch(img_dir, mask_dir)
+
+    train_dataset, val_dataset, test_dataset = create_dataloaders(img_dir, mask_dir, batch_size=4)
