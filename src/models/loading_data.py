@@ -118,4 +118,4 @@ if __name__ == "__main__":
     # # visualize batch of images and masks
     # show_batch(img_dir, mask_dir)
 
-    train_dataset, val_dataset, test_dataset = create_dataloaders(img_dir, mask_dir, batch_size=4)
+    train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size=4)
