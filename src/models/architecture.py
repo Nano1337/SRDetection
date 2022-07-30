@@ -167,6 +167,6 @@ class NoPoolASPP(Module):
         amort = self.amort_drop(amort)
 
         predictions = self.prediction(amort)
-        predictions = F.sigmoid(predictions)
+        # predictions = F.sigmoid(predictions) # don't use sigmoid here since we are using BCEWithLogitsLoss
 
         return predictions

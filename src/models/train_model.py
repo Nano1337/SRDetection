@@ -11,6 +11,7 @@ import time
 # deep learning libraries
 import torch
 import torch.optim as optim
+import torch.nn.functional as F
 
 num_epochs = 1
 initial_lr = 0.001
@@ -45,7 +46,7 @@ if __name__ == '__main__':
             img, mask = batch[0].to(device), batch[1].to(device)
             optimizer.zero_grad()
             pred = model(img)
-            loss = dice_loss(pred, mask)
+            loss = F.binary_cross_entropy_with_logits(pred, mask)
             loss.backward()
             optimizer.step()
             train_loss_total += loss.item()
@@ -63,7 +64,7 @@ if __name__ == '__main__':
         for i, batch in enumerate(val_loader):
             img, mask = batch[0].to(device), batch[1].to(device)
             pred = model(img)
-            loss = dice_loss(pred, mask)
+            loss = F.binary_cross_entropy_with_logits(pred, mask)
             val_loss_total += loss.item()
             num_steps += 1
 
