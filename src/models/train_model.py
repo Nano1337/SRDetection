@@ -64,7 +64,6 @@ if __name__ == '__main__':
         # if i % 1 == 0:
         print("range of values for pred:", pred.min(), pred.max())
         print("range of values for mask:", mask.min(), mask.max())
-        temp = pred.copy()
         print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
 
         train_loss_total_avg = train_loss_total / num_steps
