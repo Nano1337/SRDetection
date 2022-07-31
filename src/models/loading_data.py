@@ -11,6 +11,8 @@ import numpy as np
 from torchvision import transforms, utils
 import matplotlib.pyplot as plt
 from skimage import io, transform
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 import torch
 torch.manual_seed(42) # for reproducibility
 
@@ -52,8 +54,9 @@ class SRDataset(Dataset):
 
         # apply transformations if any
         if self.transform: 
-            img = self.transform(sample['image'])
-            mask = self.transform(sample['mask'])
+            transformed = self.transform(image=img, mask=mask)
+            img = transformed['image']
+            mask = transformed['mask']
         
         return img, mask
 
@@ -80,14 +83,17 @@ def show_batch(img_dir, mask_dir):
     plt.pause(1000)
 
 def make_dataset(img_dir, mask_dir):
+    prepare_transform = A.Compose([
+        A.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+        A.HorizontalFlip(p=0.5),
+        A.VerticalFlip(p=0.5),
+        ToTensorV2()
+        ])
+
     prepared_dataset = SRDataset(img_dir, 
                                 mask_dir, 
-                                transform=transforms.Compose([
-                                    transforms.ToTensor(), 
-                                    transforms.RandomVerticalFlip(p=0.5),
-                                    transforms.RandomHorizontalFlip(p=0.5), 
-                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]    
-                                ))
+                                transform=prepare_transform
+                                )
     return prepared_dataset
 
 def create_dataloaders(img_dir, mask_dir, batch_size):
@@ -121,4 +127,4 @@ if __name__ == "__main__":
     # show_batch(img_dir, mask_dir)
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size=4)
-    print(len(iter(train_loader).next()[0])) # shows the batch size of images
+    print(iter(train_loader).next()[0][0].shape) # shows shape of data
