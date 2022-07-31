@@ -68,6 +68,7 @@ class Trainer:
                 pred = self.model(input) # forward pass
                 loss = self.criterion(pred, target.float()) # calculate loss
                 loss_value = loss.item() # get loss value
+                pred = F.sigmoid(pred)
                 dice_value = dice_score(pred, target.float()) # calculate dice score
                 dice_scores.append(dice_value)
                 train_losses.append(loss_value)
@@ -96,6 +97,7 @@ class Trainer:
                 pred = self.model(input)
                 loss = self.criterion(pred, target.float())
                 loss_value = loss.item()
+                pred = F.sigmoid(pred)
                 dice_value = dice_score(pred, target.float()) # calculate dice score
                 dice_scores.append(dice_value)
                 valid_losses.append(loss_value)
