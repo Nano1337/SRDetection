@@ -62,6 +62,8 @@ if __name__ == '__main__':
         num_steps += 1
 
         # if i % 1 == 0:
+        print("range of values for pred:", pred.min(), pred.max())
+        print("range of values for mask:", mask.min(), mask.max())
         print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
 
         train_loss_total_avg = train_loss_total / num_steps
