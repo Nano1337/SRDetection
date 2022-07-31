@@ -13,6 +13,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from torchsummary import summary 
+import optuna
 
 
 num_epochs = 1
@@ -64,6 +65,7 @@ if __name__ == '__main__':
             if i%100 == 0:
                 scheduler.step()
                 lr = scheduler.get_lr()[0]
+                print("New Learning rate: {}".format(lr))
 
         train_loss_total_avg = train_loss_total / num_steps
 

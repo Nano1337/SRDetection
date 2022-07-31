@@ -1,5 +1,5 @@
 def dice_score(input, target):
-    """Dice loss.
+    """Dice Score Metric.
 
     :param input: The input (predicted)
     :param target:  The target (ground truth)
@@ -11,5 +11,5 @@ def dice_score(input, target):
     tflat = target.view(-1)
     intersection = (iflat * tflat).sum()
     
-    return 1 - ((2. * intersection + smooth) /
+    return ((2. * intersection + smooth) /
               (iflat.sum() + tflat.sum() + smooth))
