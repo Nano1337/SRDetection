@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from torchsummary import summary 
 
 
-num_epochs = 100
+num_epochs = 1
 initial_lr = 0.001
 batch_size = 4
 
@@ -31,8 +31,7 @@ if __name__ == '__main__':
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model.to(device)
     print(device)
-
-    summary(model, (3, 360, 640))
+    
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
 
@@ -51,20 +50,18 @@ if __name__ == '__main__':
         num_steps = 0
 
         # run train loop for one epoch
-        # for i, batch in enumerate(train_loader):
-        img, mask = batch[0].to(device), batch[1].to(device)
-        optimizer.zero_grad()
-        pred = model(img)
-        loss = F.binary_cross_entropy(pred, mask.float())
-        loss.backward()
-        optimizer.step()
-        train_loss_total += loss.item()
-        num_steps += 1
+        for i, batch in enumerate(train_loader):
+            img, mask = batch[0].to(device), batch[1].to(device)
+            optimizer.zero_grad()
+            pred = model(img)
+            loss = F.binary_cross_entropy(pred, mask.float())
+            loss.backward()
+            optimizer.step()
+            train_loss_total += loss.item()
+            num_steps += 1
 
-        # if i % 1 == 0:
-        print("range of values for pred:", pred.min(), pred.max())
-        print("range of values for mask:", mask.min(), mask.max())
-        print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
+            if i % 5 == 0:
+                print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
 
         train_loss_total_avg = train_loss_total / num_steps
 
@@ -74,13 +71,13 @@ if __name__ == '__main__':
             val_loss_total = 0.0
             num_steps = 0
 
-            # for i, val_batch in enumerate(val_loader):
-            img, mask = val_batch[0].to(device), val_batch[1].to(device)
-            pred = model(img)
-            loss = F.binary_cross_entropy(pred, mask.float())
-            val_loss_total += loss.item()
-            print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
-            num_steps += 1  
+            for i, val_batch in enumerate(val_loader):
+                img, mask = val_batch[0].to(device), val_batch[1].to(device)
+                pred = model(img)
+                loss = F.binary_cross_entropy(pred, mask.float())
+                val_loss_total += loss.item()
+                print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
+                num_steps += 1  
 
         val_loss_total_avg = val_loss_total / num_steps
-        print("Epoch: {}, Train Loss: {}, Val Loss: {}".format(epoch, train_loss_total_avg, val_loss_total_avg))
+        print("Final: Epoch: {}, Train Loss: {}, Val Loss: {}".format(epoch, train_loss_total_avg, val_loss_total_avg))
