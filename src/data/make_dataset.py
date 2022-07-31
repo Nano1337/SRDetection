@@ -100,6 +100,23 @@ def load_model():
 
     return model, device
 
+def analyze_results(output_img, output_mask, save_path):
+    """ Checks the results of the model and saves them to a folder"""
+    logger = logging.getLogger(__name__)
+    logger.info('analyzing results')
+    for i in range(len(os.listdir(output_img))):
+        img_path = os.path.join(output_img, str(i).zfill(5) + '.png')
+        img = cv2.imread(img_path)
+        mask_path = os.path.join(output_mask, str(i).zfill(5) + '.png')
+        output = cv2.imread(mask_path)
+        output = output[:, :, 0]
+        img[output == 255] = 0
+        img_output_path = os.path.join(save_path, str(i).zfill(5) + '.png')
+        cv2.imwrite(img_output_path, img)
+        logger.info('{} processed'.format(img_path))
+
+    print("Done")
+
 def main(input_filepath, img_output, mask_output):
     """ Runs data processing scripts to turn raw data into
         cleaned data ready to be analyzed.
@@ -142,4 +159,6 @@ if __name__ == '__main__':
     output_img = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
     output_mask = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
 
-    main(input_dir, output_img, output_mask)
+    # main(input_dir, output_img, output_mask)
+    analyze_output_path = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_analyze")
+    analyze_results(output_img, output_mask, analyze_output_path)
