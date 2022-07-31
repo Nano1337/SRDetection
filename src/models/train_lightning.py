@@ -1,26 +1,26 @@
+# import outside functions
+from loading_data import create_dataloaders
+
+# system libraries
+from pathlib import Path
+
+# deep learning libraries
+import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from torch.nn import Module
 import torch.nn.functional as F
+import torch.optim as optim
 
-class NoPoolASPP(Module):
-    """
-    .. image:: _static/img/nopool_aspp_arch.png
-        :align: center
-        :scale: 25%
+# global constants
+# img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
+# mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+img_dir = Path(r"/content/GLENDA_img")
+mask_dir = Path(r"/content/GLENDA_mask")
+batch_size = 4
+num_workers = 2
+initial_lr = 0.001
 
-    An ASPP-based model without initial pooling layers.
-
-    :param drop_rate: dropout rate.
-    :param bn_momentum: batch normalization momentum.
-
-    .. seealso::
-        Perone, C. S., et al (2017). Spinal cord gray matter
-        segmentation using deep dilated convolutions.
-        Nature Scientific Reports link:
-        https://www.nature.com/articles/s41598-018-24304-3
-
-    """
+class SRDetectModel(pl.LightningModule):
     def __init__(self, drop_rate=0.4, bn_momentum=0.1,
                  base_num_filters=64):
         super().__init__()
@@ -170,3 +170,69 @@ class NoPoolASPP(Module):
         predictions = F.sigmoid(predictions)
 
         return predictions
+
+    def configure_optimizers(self):
+        """Return optimizers and schedulers."""
+        optimizer = optim.Adam(self.parameters(), lr=initial_lr)
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=2, verbose=True)
+        return [optimizer], [scheduler]
+
+    def training_step(self, batch, batch_idx):
+        """Train step.
+
+        :param batch: input data.
+        :param batch_idx: batch index.
+        """
+        x, y = batch
+        y_pred = self(x)
+        loss = F.binary_cross_entropy(y_pred, y.float())
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        """Validation step.
+
+        :param batch: input data.
+        :param batch_idx: batch index.
+        """
+        x, y = batch
+        y_pred = self(x)
+        loss = F.binary_cross_entropy(y_pred, y.float())
+        self.log("val_loss", loss, prog_bar=True)
+
+    def test_step(self, batch, batch_idx):
+        """Test step.
+
+        :param batch: input data.
+        :param batch_idx: batch index.
+        """
+        x, y = batch
+        y_pred = self(x)
+        loss = F.binary_cross_entropy(y_pred, y.float())
+        self.log("test_loss", loss, prog_bar=True)
+
+    def predict_step(self, batch, batch_idx):
+        """Predict step.
+
+        :param batch: input data.
+        :param batch_idx: batch index.
+        """
+        x, y = batch
+        y_pred = self(x)
+        return y_pred
+
+    def train_dataloader(self):
+        """Return train dataloader."""
+        return create_dataloaders(img_dir, mask_dir, batch_size, num_workers, 'train')
+    
+    def val_dataloader(self):
+        """Return validation dataloader."""
+        return create_dataloaders(img_dir, mask_dir, batch_size, num_workers, 'val')
+
+    def test_dataloader(self):
+        """Return test dataloader."""
+        return create_dataloaders(img_dir, mask_dir, batch_size, num_workers, 'test')
+
+if __name__ == "__main__":
+    model = SRDetectModel()
+    trainer = pl.Trainer()
+    trainer.fit(model)

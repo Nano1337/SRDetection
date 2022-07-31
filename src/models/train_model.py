@@ -14,6 +14,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchsummary import summary 
 import optuna
+import deepspeed
 
 class Trainer: 
     def __init__(self, 
@@ -112,6 +113,8 @@ if __name__ == '__main__':
     num_workers = 2
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers)
     model = NoPoolASPP()
+    
+
     criterion = F.binary_cross_entropy
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs) # try using with warm restarts

@@ -98,7 +98,7 @@ def make_dataset(img_dir, mask_dir):
                                 )
     return prepared_dataset
 
-def create_dataloaders(img_dir, mask_dir, batch_size, num_workers):
+def create_dataloaders(img_dir, mask_dir, batch_size, num_workers, loader_type='train'):
     ''' Creates dataloaders for training, validation, and testing '''
 
     full_dataset = make_dataset(img_dir, mask_dir)
@@ -117,11 +117,12 @@ def create_dataloaders(img_dir, mask_dir, batch_size, num_workers):
     num_workers = num_workers
 
     # create iterators 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
-
-    return train_loader, val_loader, test_loader
+    if loader_type == 'train':
+        return DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    if loader_type == 'val':
+        return DataLoader(val_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    if loader_type == 'test':
+        return DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
 
 if __name__ == "__main__": 
     img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
