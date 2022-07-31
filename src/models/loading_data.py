@@ -57,6 +57,8 @@ class SRDataset(Dataset):
             transformed = self.transform(image=img, mask=mask)
             img = transformed['image']
             mask = transformed['mask']
+            mask[mask==255] = 1
+            mask = mask[None, :, :]
         
         return img, mask
 
@@ -127,4 +129,4 @@ if __name__ == "__main__":
     # show_batch(img_dir, mask_dir)
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size=4)
-    print(iter(train_loader).next()[0][0].shape) # shows shape of data
+    print(iter(train_loader).next()[1][0].shape) # shows shape of data
