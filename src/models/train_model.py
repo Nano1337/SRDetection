@@ -55,8 +55,6 @@ if __name__ == '__main__':
         img, mask = batch[0].to(device), batch[1].to(device)
         optimizer.zero_grad()
         pred = model(img)
-        pred[pred>=0.5] = 1
-        pred[pred<0.5] = 0
         loss = F.binary_cross_entropy(pred, mask.float())
         loss.backward()
         optimizer.step()
@@ -66,6 +64,7 @@ if __name__ == '__main__':
         # if i % 1 == 0:
         print("range of values for pred:", pred.min(), pred.max())
         print("range of values for mask:", mask.min(), mask.max())
+        temp = pred.copy()
         print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
 
         train_loss_total_avg = train_loss_total / num_steps
@@ -79,7 +78,7 @@ if __name__ == '__main__':
             # for i, val_batch in enumerate(val_loader):
             img, mask = val_batch[0].to(device), val_batch[1].to(device)
             pred = model(img)
-            loss = F.binary_cross_entropy_with_logits(pred, mask.float())
+            loss = F.binary_cross_entropy(pred, mask.float())
             val_loss_total += loss.item()
             print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
             num_steps += 1  
