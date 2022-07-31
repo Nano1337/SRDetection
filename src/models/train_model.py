@@ -12,6 +12,8 @@ import time
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+from torchsummary import summary 
+
 
 num_epochs = 1
 initial_lr = 0.001
@@ -19,8 +21,10 @@ batch_size = 4
 
 if __name__ == '__main__':
 
-    img_dir = Path(r"/content/GLENDA_img")
-    mask_dir = Path(r"/content/GLENDA_mask")
+    # img_dir = Path(r"/content/GLENDA_img")
+    # mask_dir = Path(r"/content/GLENDA_mask")
+    img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
+    mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size)
     model = NoPoolASPP()
@@ -28,45 +32,46 @@ if __name__ == '__main__':
     model.to(device)
     print(device)
 
-    optimizer = optim.Adam(model.parameters(), lr=initial_lr)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
+    summary(model, (3, 360, 640))
+    # optimizer = optim.Adam(model.parameters(), lr=initial_lr)
+    # scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
 
-    for epoch in tqdm(range(1, num_epochs+1)):
-        start_time = time.time()
-        scheduler.step()
+    # for epoch in tqdm(range(1, num_epochs+1)):
+    #     start_time = time.time()
+    #     scheduler.step()
 
-        lr = scheduler.get_lr()[0]
+    #     lr = scheduler.get_lr()[0]
 
-        model.train()
-        train_loss_total = 0.0
-        num_steps = 0
+    #     model.train()
+    #     train_loss_total = 0.0
+    #     num_steps = 0
         
-        # run train loop for one epoch
-        for i, batch in enumerate(train_loader):
-            img, mask = batch[0].to(device), batch[1].to(device)
-            optimizer.zero_grad()
-            pred = model(img)
-            loss = F.binary_cross_entropy_with_logits(pred, mask.float())
-            loss.backward()
-            optimizer.step()
-            train_loss_total += loss.item()
-            num_steps += 1
+    #     # run train loop for one epoch
+    #     for i, batch in enumerate(train_loader):
+    #         img, mask = batch[0].to(device), batch[1].to(device)
+    #         optimizer.zero_grad()
+    #         pred = model(img)
+    #         loss = F.binary_cross_entropy_with_logits(pred, mask.float())
+    #         loss.backward()
+    #         optimizer.step()
+    #         train_loss_total += loss.item()
+    #         num_steps += 1
 
-            if i % 5 == 0:
-                print("Epoch: {}, Step: {}, Loss: {}".format(epoch, i, loss.item()))
+    #         if i % 5 == 0:
+    #             print("Epoch: {}, Step: {}, Loss: {}".format(epoch, i, loss.item()))
 
-        train_loss_total_avg = train_loss_total / num_steps
-        # run validation loop for one epoch
-        model.eval()
-        val_loss_total = 0.0
-        num_steps = 0
+    #     train_loss_total_avg = train_loss_total / num_steps
+    #     # run validation loop for one epoch
+    #     model.eval()
+    #     val_loss_total = 0.0
+    #     num_steps = 0
 
-        for i, batch in enumerate(val_loader):
-            img, mask = batch[0].to(device), batch[1].to(device)
-            pred = model(img)
-            loss = F.binary_cross_entropy_with_logits(pred, mask.float())
-            val_loss_total += loss.item()
-            num_steps += 1
+    #     for i, batch in enumerate(val_loader):
+    #         img, mask = batch[0].to(device), batch[1].to(device)
+    #         pred = model(img)
+    #         loss = F.binary_cross_entropy_with_logits(pred, mask.float())
+    #         val_loss_total += loss.item()
+    #         num_steps += 1
 
-        val_loss_total_avg = val_loss_total / num_steps
-        print("Epoch: {}, Train Loss: {}, Val Loss: {}".format(epoch, train_loss_total_avg, val_loss_total_avg))
+    #     val_loss_total_avg = val_loss_total / num_steps
+    #     print("Epoch: {}, Train Loss: {}, Val Loss: {}".format(epoch, train_loss_total_avg, val_loss_total_avg))
