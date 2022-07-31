@@ -98,7 +98,7 @@ def make_dataset(img_dir, mask_dir):
                                 )
     return prepared_dataset
 
-def create_dataloaders(img_dir, mask_dir, batch_size):
+def create_dataloaders(img_dir, mask_dir, batch_size, num_workers):
     ''' Creates dataloaders for training, validation, and testing '''
 
     full_dataset = make_dataset(img_dir, mask_dir)
@@ -114,7 +114,7 @@ def create_dataloaders(img_dir, mask_dir, batch_size):
     # create train and val datasets
     train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
 
-    num_workers = 4
+    num_workers = num_workers
 
     # create iterators 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
@@ -130,5 +130,5 @@ if __name__ == "__main__":
     # # visualize batch of images and masks
     # show_batch(img_dir, mask_dir)
 
-    train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size=4)
+    train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size=4, num_workers=1)
     print(iter(train_loader).next()[1][0].shape) # shows shape of data

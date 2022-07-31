@@ -108,8 +108,8 @@ if __name__ == '__main__':
     num_epochs = 1
     initial_lr = 0.001
     batch_size = 4
-
-    train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size)
+    num_workers = 2
+    train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers)
     model = NoPoolASPP()
     criterion = F.binary_cross_entropy
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
