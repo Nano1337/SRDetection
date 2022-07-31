@@ -14,6 +14,9 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchsummary import summary 
 import optuna
+from torch.cuda.amp import GradScaler, autocast
+
+gradient_accumulations = 8 # training will be done for effective batch size of 4 * 8 = 32
 
 class Trainer: 
     def __init__(self, 
@@ -35,6 +38,8 @@ class Trainer:
         self.val_loader = val_loader
         self.epochs = epochs
         self.epoch = epoch
+        self.scaler = GradScaler()
+
         self.train_loss = []
         self.val_loss = []
         self.learning_rate = []
@@ -59,14 +64,17 @@ class Trainer:
         for i, (x, y) in batch_iter: 
             input, target = x.to(self.device), y.to(self.device)
             self.optimizer.zero_grad() # zerograd parameters
-            pred = self.model(input) # forward pass
-            loss = self.criterion(pred, target.float()) # calculate loss
-            loss_value = loss.item() # get loss value
-            dice_value = dice_score(pred, target.float()) # calculate dice score
-            dice_scores.append(dice_value)
-            train_losses.append(loss_value)
-            loss.backward() # backpropagate
-            self.optimizer.step() # update parameters
+            with autocast():
+                pred = self.model(input) # forward pass
+                loss = self.criterion(pred, target.float()) # calculate loss
+                loss_value = loss.item() # get loss value
+                dice_value = dice_score(pred, target.float()) # calculate dice score
+                dice_scores.append(dice_value)
+                train_losses.append(loss_value)
+            self.scaler.scale(loss/gradient_accumulations).backward() # backpropagate
+            if (i+1) % gradient_accumulations == 0:
+                self.scaler.step(optimizer)
+                self.scaler.update()
 
             batch_iter.set_description(f"Training: (loss {loss_value:.4f}, dice {dice_value:.4f})") # update progressbar
         
@@ -103,14 +111,19 @@ if __name__ == '__main__':
     img_dir = Path(r"/content/GLENDA_img")
     mask_dir = Path(r"/content/GLENDA_mask")
     # img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
-    # mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+    # mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")  
 
+    # hyperparameters
     num_epochs = 1
     initial_lr = 0.001
     batch_size = 4
     num_workers = 2
+    drop_rate = 0.4
+    bn_momentum = 0.1
+    base_num_filters = 64
+
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers)
-    model = NoPoolASPP()
+    model = NoPoolASPP(drop_rate=drop_rate, bn_momentum=bn_momentum, base_num_filters=base_num_filters)
     criterion = F.binary_cross_entropy
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs) # try using with warm restarts
@@ -126,67 +139,3 @@ if __name__ == '__main__':
     train_loss, val_loss, learning_rate, dice_score_train, dice_score_val = trainer.run_trainer()
 
 
-
-
-
-
-
-
-
-
-
-
-
-    # # overfit to single sample first to debug model
-    # batch = next(iter(train_loader))
-    # val_batch = next(iter(val_loader))
-
-    # for epoch in tqdm(range(1, num_epochs+1)):
-    #     start_time = time.time()
-    #     scheduler.step()
-    #     lr = scheduler.get_lr()[0]
-
-    #     model.train()
-    #     train_loss_total = 0.0
-    #     num_steps = 0
-
-    #     # run train loop for one epoch
-    #     for i, batch in enumerate(train_loader):
-    #         img, mask = batch[0].to(device), batch[1].to(device)
-    #         optimizer.zero_grad()
-    #         pred = model(img)
-    #         loss = F.binary_cross_entropy(pred, mask.float())
-    #         loss.backward()
-    #         optimizer.step()
-    #         train_loss_total += loss.item()
-    #         num_steps += 1
-
-    #         if i % 5 == 0:
-    #             print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
-    #         if i%100 == 0:
-    #             scheduler.step()
-    #             lr = scheduler.get_lr()[0]
-    #             print("New Learning rate: {}".format(lr))
-
-    #     train_loss_total_avg = train_loss_total / num_steps
-
-    #     # run validation loop for one epoch
-    #     model.eval()
-    #     with torch.no_grad():
-    #         val_loss_total = 0.0
-    #         dice_score_total = 0.0
-    #         num_steps = 0
-
-    #         for i, val_batch in enumerate(val_loader):
-    #             img, mask = val_batch[0].to(device), val_batch[1].to(device)
-    #             pred = model(img)
-    #             loss = F.binary_cross_entropy(pred, mask.float())
-    #             val_loss_total += loss.item()
-    #             dscore = dice_score(pred, mask.float())
-    #             dice_score_total += dscore
-    #             print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dscore))
-    #             num_steps += 1  
-
-    #     val_loss_total_avg = val_loss_total / num_steps
-    #     dice_score_total_avg = dice_score_total / num_steps
-    #     print("Final: Epoch: {}, Train Loss: {}, Val Loss: {}, Avg Validation Dice Score: {}".format(epoch, train_loss_total_avg, val_loss_total_avg, dice_score_total_avg))
