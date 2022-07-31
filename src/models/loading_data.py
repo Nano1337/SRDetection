@@ -107,12 +107,14 @@ def create_dataloaders(img_dir, mask_dir, batch_size):
     test_size = len(full_dataset) - train_size
 
     # create test dataset
-    train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
+    # train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
+    train_dataset, test_dataset = torch.utils.data.random_split(full_dataset, [3, 3])
     val_size = int(0.25 * train_size)
     train_size -= val_size
 
     # create train and val datasets
-    train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+    # train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [train_size, val_size])
+    train_dataset, val_dataset = torch.utils.data.random_split(train_dataset, [3, 3])
 
     num_workers = 4
 
