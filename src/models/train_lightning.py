@@ -186,6 +186,7 @@ class SRDetectModel(pl.LightningModule):
         x, y = batch
         y_pred = self(x)
         loss = F.binary_cross_entropy(y_pred, y.float())
+        self.log('train_loss', loss, prog_bar=True)
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -225,5 +226,5 @@ if __name__ == "__main__":
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers, )
 
     model = SRDetectModel()
-    trainer = pl.Trainer()
+    trainer = pl.Trainer(accelerator="tpu", devices=8)
     trainer.fit(model, train_loader, val_loader)
