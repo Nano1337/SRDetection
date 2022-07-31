@@ -18,10 +18,10 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 
 # global constants
 
-img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
-mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
-# img_dir = Path(r"/content/GLENDA_img")
-# mask_dir = Path(r"/content/GLENDA_mask")
+# img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
+# mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+img_dir = Path(r"/content/GLENDA_img")
+mask_dir = Path(r"/content/GLENDA_mask")
 batch_size = 4
 num_workers = 2
 initial_lr = 0.001
