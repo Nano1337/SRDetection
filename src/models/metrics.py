@@ -5,14 +5,11 @@ def dice_score(input, target):
     :param target:  The target (ground truth)
     :returns: the Dice score between 0 and 1.
     """
-    eps = 0.0001
+    smooth = 1.
 
     iflat = input.view(-1)
     tflat = target.view(-1)
-
     intersection = (iflat * tflat).sum()
-    union = iflat.sum() + tflat.sum()
-
-    dice = (2.0 * intersection + eps) / (union + eps)
-
-    return dice
+    
+    return 1 - ((2. * intersection + smooth) /
+              (iflat.sum() + tflat.sum() + smooth))
