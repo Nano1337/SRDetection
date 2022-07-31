@@ -220,19 +220,10 @@ class SRDetectModel(pl.LightningModule):
         y_pred = self(x)
         return y_pred
 
-    def train_dataloader(self):
-        """Return train dataloader."""
-        return create_dataloaders(img_dir, mask_dir, batch_size, num_workers, 'train')
-    
-    def val_dataloader(self):
-        """Return validation dataloader."""
-        return create_dataloaders(img_dir, mask_dir, batch_size, num_workers, 'val')
-
-    def test_dataloader(self):
-        """Return test dataloader."""
-        return create_dataloaders(img_dir, mask_dir, batch_size, num_workers, 'test')
-
 if __name__ == "__main__":
+
+    train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers, )
+
     model = SRDetectModel()
     trainer = pl.Trainer()
-    trainer.fit(model)
+    trainer.fit(model, train_loader, val_loader)
