@@ -100,10 +100,10 @@ class Trainer:
 
 if __name__ == '__main__':
 
-    # img_dir = Path(r"/content/GLENDA_img")
-    # mask_dir = Path(r"/content/GLENDA_mask")
-    img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
-    mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+    img_dir = Path(r"/content/GLENDA_img")
+    mask_dir = Path(r"/content/GLENDA_mask")
+    # img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
+    # mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
 
     num_epochs = 1
     initial_lr = 0.001
