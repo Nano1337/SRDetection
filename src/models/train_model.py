@@ -14,9 +14,6 @@ import torch.optim as optim
 import torch.nn.functional as F
 from torchsummary import summary 
 import optuna
-from torch.cuda.amp import GradScaler, autocast
-
-gradient_accumulations = 8 # training will be done for effective batch size of 4 * 8 = 32
 
 class Trainer: 
     def __init__(self, 
@@ -38,8 +35,6 @@ class Trainer:
         self.val_loader = val_loader
         self.epochs = epochs
         self.epoch = epoch
-        self.scaler = GradScaler()
-
         self.train_loss = []
         self.val_loss = []
         self.learning_rate = []
@@ -64,18 +59,14 @@ class Trainer:
         for i, (x, y) in batch_iter: 
             input, target = x.to(self.device), y.to(self.device)
             self.optimizer.zero_grad() # zerograd parameters
-            with autocast():
-                pred = self.model(input) # forward pass
-                loss = self.criterion(pred, target.float()) # calculate loss
-                loss_value = loss.item() # get loss value
-                pred = F.sigmoid(pred)
-                dice_value = dice_score(pred, target.float()) # calculate dice score
-                dice_scores.append(dice_value)
-                train_losses.append(loss_value)
-            self.scaler.scale(loss/gradient_accumulations).backward() # backpropagate
-            if (i+1) % gradient_accumulations == 0:
-                self.scaler.step(optimizer)
-                self.scaler.update()
+            pred = self.model(input) # forward pass
+            loss = self.criterion(pred, target.float()) # calculate loss
+            loss_value = loss.item() # get loss value
+            dice_value = dice_score(pred, target.float()) # calculate dice score
+            dice_scores.append(dice_value)
+            train_losses.append(loss_value)
+            loss.backward() # backpropagate
+            self.optimizer.step() # update parameters
 
             batch_iter.set_description(f"Training: (loss {loss_value:.4f}, dice {dice_value:.4f})") # update progressbar
         
@@ -113,20 +104,15 @@ if __name__ == '__main__':
     img_dir = Path(r"/content/GLENDA_img")
     mask_dir = Path(r"/content/GLENDA_mask")
     # img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
-    # mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")  
+    # mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
 
-    # hyperparameters
     num_epochs = 1
     initial_lr = 0.001
     batch_size = 4
     num_workers = 2
-    drop_rate = 0.4
-    bn_momentum = 0.1
-    base_num_filters = 64
-
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers)
-    model = NoPoolASPP(drop_rate=drop_rate, bn_momentum=bn_momentum, base_num_filters=base_num_filters)
-    criterion = F.binary_cross_entropy_with_logits
+    model = NoPoolASPP()
+    criterion = F.binary_cross_entropy
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs) # try using with warm restarts
     trainer = Trainer(
