@@ -31,18 +31,17 @@ if __name__ == '__main__':
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     model.to(device)
     print(device)
-    
+
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
 
-    # overfit to single sample first to debug model
-    batch = next(iter(train_loader))
-    val_batch = next(iter(val_loader))
+    # # overfit to single sample first to debug model
+    # batch = next(iter(train_loader))
+    # val_batch = next(iter(val_loader))
 
     for epoch in tqdm(range(1, num_epochs+1)):
         start_time = time.time()
         scheduler.step()
-
         lr = scheduler.get_lr()[0]
 
         model.train()
@@ -62,6 +61,9 @@ if __name__ == '__main__':
 
             if i % 5 == 0:
                 print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
+            if i%100 == 0:
+                scheduler.step()
+                lr = scheduler.get_lr()[0]
 
         train_loss_total_avg = train_loss_total / num_steps
 
@@ -69,6 +71,7 @@ if __name__ == '__main__':
         model.eval()
         with torch.no_grad():
             val_loss_total = 0.0
+            dice_score_total = 0.0
             num_steps = 0
 
             for i, val_batch in enumerate(val_loader):
@@ -76,8 +79,11 @@ if __name__ == '__main__':
                 pred = model(img)
                 loss = F.binary_cross_entropy(pred, mask.float())
                 val_loss_total += loss.item()
-                print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
+                dscore = dice_score(pred, mask.float())
+                dice_score_total += dscore
+                print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dscore))
                 num_steps += 1  
 
         val_loss_total_avg = val_loss_total / num_steps
-        print("Final: Epoch: {}, Train Loss: {}, Val Loss: {}".format(epoch, train_loss_total_avg, val_loss_total_avg))
+        dice_score_total_avg = dice_score_total / num_steps
+        print("Final: Epoch: {}, Train Loss: {}, Val Loss: {}, Avg Validation Dice Score: {}".format(epoch, train_loss_total_avg, val_loss_total_avg, dice_score_total_avg))
