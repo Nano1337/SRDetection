@@ -55,7 +55,7 @@ if __name__ == '__main__':
         img, mask = batch[0].to(device), batch[1].to(device)
         optimizer.zero_grad()
         pred = model(img)
-        loss = F.binary_cross_entropy_with_logits(pred, mask.float())
+        loss = F.binary_cross_entropy(pred, mask.float())
         loss.backward()
         optimizer.step()
         train_loss_total += loss.item()
