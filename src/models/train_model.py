@@ -1,7 +1,7 @@
 # import modules from outside
 from loading_data import create_dataloaders
 from architecture import NoPoolASPP
-from metrics import dice_score
+from utils import dice_score
 
 # system libraries 
 from pathlib import Path

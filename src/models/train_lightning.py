@@ -1,5 +1,7 @@
 # import outside functions
+from argparse import ArgumentParser
 from loading_data import create_dataloaders
+from utils import dice_score
 
 # system libraries
 from pathlib import Path
@@ -10,12 +12,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 
 # global constants
-# img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
-# mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
-img_dir = Path(r"/content/GLENDA_img")
-mask_dir = Path(r"/content/GLENDA_mask")
+
+img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
+mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+# img_dir = Path(r"/content/GLENDA_img")
+# mask_dir = Path(r"/content/GLENDA_mask")
 batch_size = 4
 num_workers = 2
 initial_lr = 0.001
@@ -25,6 +31,7 @@ class SRDetectModel(pl.LightningModule):
                  base_num_filters=64):
         super().__init__()
 
+        # define the model
         self.conv1a = nn.Conv2d(3, base_num_filters, kernel_size=3, padding=1)
         self.conv1a_bn = nn.BatchNorm2d(base_num_filters, momentum=bn_momentum)
         self.conv1a_drop = nn.Dropout2d(drop_rate)
@@ -87,6 +94,9 @@ class SRDetectModel(pl.LightningModule):
         self.amort_drop = nn.Dropout2d(drop_rate)
 
         self.prediction = nn.Conv2d(base_num_filters*2, 1, kernel_size=1)
+
+        # log hyperparameters
+        self.save_hyperparameters()
 
     def forward(self, x):
         """Model forward pass.
@@ -187,6 +197,7 @@ class SRDetectModel(pl.LightningModule):
         y_pred = self(x)
         loss = F.binary_cross_entropy(y_pred, y.float())
         self.log('train_loss', loss, prog_bar=True)
+        self.log('train_dice', dice_score(y_pred, y.float()), prog_bar=True)
         return loss
     
     def validation_step(self, batch, batch_idx):
@@ -199,6 +210,7 @@ class SRDetectModel(pl.LightningModule):
         y_pred = self(x)
         loss = F.binary_cross_entropy(y_pred, y.float())
         self.log("val_loss", loss, prog_bar=True)
+        self.log("val_dice", dice_score(y_pred, y.float()), prog_bar=True)
 
     def test_step(self, batch, batch_idx):
         """Test step.
@@ -225,6 +237,11 @@ if __name__ == "__main__":
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers, )
 
+    wandb_logger = WandbLogger(name="ASPP_baseline", project="SRDetection", log_model=True, save_dir="./")
     model = SRDetectModel()
-    trainer = pl.Trainer(accelerator="gpu", devices=1)
+
+    # implement model checkpointing
+    checkpoint_callback = ModelCheckpoint(monitor='val_dice', mode='max')
+
+    trainer = Trainer(accelerator="gpu", devices=1, logger=wandb_logger, callbacks=[checkpoint_callback])
     trainer.fit(model, train_loader, val_loader)

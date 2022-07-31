@@ -1,0 +1,24 @@
+{
+    "os": "Windows-10-10.0.22000-SP0",
+    "python": "3.10.4",
+    "heartbeatAt": "2022-07-31T23:13:25.251252",
+    "startedAt": "2022-07-31T23:13:24.746288",
+    "docker": null,
+    "gpu": "NVIDIA GeForce MX450",
+    "gpu_count": 1,
+    "cpu_count": 8,
+    "cuda": null,
+    "args": [],
+    "state": "running",
+    "program": "C:\\Users\\haoli\\OneDrive\\Documents\\SRDetection\\src\\models\\train_lightning.py",
+    "codePath": "src\\models\\train_lightning.py",
+    "git": {
+        "remote": "https://github.com/Nano1337/SRDetection.git",
+        "commit": "62f24ec321663434f5dd71870edfe5527c9b8caf"
+    },
+    "email": "haoli.yin@vanderbilt.edu",
+    "root": "C:/Users/haoli/OneDrive/Documents/SRDetection",
+    "host": "LAPTOP-J34FFTH9",
+    "username": "haoli",
+    "executable": "C:\\Users\\haoli\\anaconda3\\envs\\SRDetect\\python.exe"
+}
