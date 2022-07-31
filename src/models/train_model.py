@@ -5,7 +5,7 @@ from metrics import dice_score
 
 # system libraries 
 from pathlib import Path
-from tqdm import tqdm
+from tqdm import tqdm, trange
 import time
 
 # deep learning libraries
@@ -15,77 +15,178 @@ import torch.nn.functional as F
 from torchsummary import summary 
 import optuna
 
+class Trainer: 
+    def __init__(self, 
+                model: torch.nn.Module, 
+                criterion: torch.nn.Module, 
+                optimizer: torch.optim.Optimizer, 
+                train_loader: torch.utils.data.Dataset, 
+                val_loader: torch.utils.data.Dataset, 
+                lr_scheduler = torch.optim.lr_scheduler, 
+                epochs: int = 100,
+                epoch: int = 0
+                ): 
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.model = model.to(self.device)
+        self.criterion = criterion
+        self.optimizer = optimizer
+        self.lr_scheduler = lr_scheduler
+        self.train_loader = train_loader
+        self.val_loader = val_loader
+        self.epochs = epochs
+        self.epoch = epoch
+        self.train_loss = []
+        self.val_loss = []
+        self.learning_rate = []
+        self.dice_score_train = []
+        self.dice_score_val = []
 
-num_epochs = 1
-initial_lr = 0.001
-batch_size = 4
+    def run_trainer(self):
+        progressbar = trange(self.epochs, desc="Progress")
+        for i in progressbar: 
+            self.epoch += 1
+            self.train_loop()
+            self.val_loop()
+            self.lr_scheduler.step()
+            return self.train_loss, self.val_loss, self.learning_rate, self.dice_score_train, self.dice_score_val
+    
+    def train_loop(self):
+        self.model.train()
+        train_losses = [] # accumulate losses from this run
+        dice_scores = []
+        batch_iter = tqdm(enumerate(self.train_loader), 'Training', total=len(self.train_loader), leave=False)
+
+        for i, (x, y) in batch_iter: 
+            input, target = x.to(self.device), y.to(self.device)
+            self.optimizer.zero_grad() # zerograd parameters
+            pred = self.model(input) # forward pass
+            loss = self.criterion(pred, target.float()) # calculate loss
+            loss_value = loss.item() # get loss value
+            dice_value = dice_score(pred, target.float()) # calculate dice score
+            dice_scores.append(dice_value)
+            train_losses.append(loss_value)
+            loss.backward() # backpropagate
+            self.optimizer.step() # update parameters
+
+            batch_iter.set_description(f"Training: (loss {loss_value:.4f}, dice {dice_value:.4f})") # update progressbar
+        
+        self.train_loss.append(sum(train_losses) / len(train_losses))
+        self.learning_rate.append(self.optimizer.param_groups[0]['lr'])
+        self.dice_score_train.append(sum(dice_scores) / len(dice_scores))
+        batch_iter.close()
+
+    def val_loop(self):
+        self.model.eval() # set model to evaluation mode
+        valid_losses = []
+        dice_scores = []
+        batch_iter = tqdm(enumerate(self.val_loader), 'Validation', total=len(self.val_loader), leave=False)
+        
+        for i, (x, y) in batch_iter: 
+            input, target = x.to(self.device), y.to(self.device)
+
+            with torch.no_grad():
+                pred = self.model(input)
+                loss = self.criterion(pred, target.float())
+                loss_value = loss.item()
+                dice_value = dice_score(pred, target.float()) # calculate dice score
+                dice_scores.append(dice_value)
+                valid_losses.append(loss_value)
+
+                batch_iter.set_description(f"Validation: (loss {loss_value:.4f}, dice {dice_value:.4f})")
+        
+        self.val_loss.append(sum(valid_losses) / len(valid_losses))
+        self.dice_score_val.append(sum(dice_scores) / len(dice_scores))
+        batch_iter.close()
 
 if __name__ == '__main__':
 
-    img_dir = Path(r"/content/GLENDA_img")
-    mask_dir = Path(r"/content/GLENDA_mask")
-    # img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
-    # mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+    # img_dir = Path(r"/content/GLENDA_img")
+    # mask_dir = Path(r"/content/GLENDA_mask")
+    img_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_img")
+    mask_dir = Path(r"D:\GLENDA_v1.5_no_pathology\no_pathology\GLENDA_mask")
+
+    num_epochs = 1
+    initial_lr = 0.001
+    batch_size = 4
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size)
     model = NoPoolASPP()
-    device = "cuda:0" if torch.cuda.is_available() else "cpu"
-    model.to(device)
-    print(device)
-
+    criterion = F.binary_cross_entropy
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs) # try using with warm restarts
+    trainer = Trainer(
+        model=model, 
+        criterion=criterion, 
+        optimizer=optimizer, 
+        train_loader=train_loader, 
+        val_loader=val_loader, 
+        lr_scheduler=scheduler, 
+        epochs=num_epochs)
+
+    train_loss, val_loss, learning_rate, dice_score_train, dice_score_val = trainer.run_trainer()
+
+
+
+
+
+
+
+
+
+
+
+
 
     # # overfit to single sample first to debug model
     # batch = next(iter(train_loader))
     # val_batch = next(iter(val_loader))
 
-    for epoch in tqdm(range(1, num_epochs+1)):
-        start_time = time.time()
-        scheduler.step()
-        lr = scheduler.get_lr()[0]
+    # for epoch in tqdm(range(1, num_epochs+1)):
+    #     start_time = time.time()
+    #     scheduler.step()
+    #     lr = scheduler.get_lr()[0]
 
-        model.train()
-        train_loss_total = 0.0
-        num_steps = 0
+    #     model.train()
+    #     train_loss_total = 0.0
+    #     num_steps = 0
 
-        # run train loop for one epoch
-        for i, batch in enumerate(train_loader):
-            img, mask = batch[0].to(device), batch[1].to(device)
-            optimizer.zero_grad()
-            pred = model(img)
-            loss = F.binary_cross_entropy(pred, mask.float())
-            loss.backward()
-            optimizer.step()
-            train_loss_total += loss.item()
-            num_steps += 1
+    #     # run train loop for one epoch
+    #     for i, batch in enumerate(train_loader):
+    #         img, mask = batch[0].to(device), batch[1].to(device)
+    #         optimizer.zero_grad()
+    #         pred = model(img)
+    #         loss = F.binary_cross_entropy(pred, mask.float())
+    #         loss.backward()
+    #         optimizer.step()
+    #         train_loss_total += loss.item()
+    #         num_steps += 1
 
-            if i % 5 == 0:
-                print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
-            if i%100 == 0:
-                scheduler.step()
-                lr = scheduler.get_lr()[0]
-                print("New Learning rate: {}".format(lr))
+    #         if i % 5 == 0:
+    #             print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
+    #         if i%100 == 0:
+    #             scheduler.step()
+    #             lr = scheduler.get_lr()[0]
+    #             print("New Learning rate: {}".format(lr))
 
-        train_loss_total_avg = train_loss_total / num_steps
+    #     train_loss_total_avg = train_loss_total / num_steps
 
-        # run validation loop for one epoch
-        model.eval()
-        with torch.no_grad():
-            val_loss_total = 0.0
-            dice_score_total = 0.0
-            num_steps = 0
+    #     # run validation loop for one epoch
+    #     model.eval()
+    #     with torch.no_grad():
+    #         val_loss_total = 0.0
+    #         dice_score_total = 0.0
+    #         num_steps = 0
 
-            for i, val_batch in enumerate(val_loader):
-                img, mask = val_batch[0].to(device), val_batch[1].to(device)
-                pred = model(img)
-                loss = F.binary_cross_entropy(pred, mask.float())
-                val_loss_total += loss.item()
-                dscore = dice_score(pred, mask.float())
-                dice_score_total += dscore
-                print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dscore))
-                num_steps += 1  
+    #         for i, val_batch in enumerate(val_loader):
+    #             img, mask = val_batch[0].to(device), val_batch[1].to(device)
+    #             pred = model(img)
+    #             loss = F.binary_cross_entropy(pred, mask.float())
+    #             val_loss_total += loss.item()
+    #             dscore = dice_score(pred, mask.float())
+    #             dice_score_total += dscore
+    #             print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dscore))
+    #             num_steps += 1  
 
-        val_loss_total_avg = val_loss_total / num_steps
-        dice_score_total_avg = dice_score_total / num_steps
-        print("Final: Epoch: {}, Train Loss: {}, Val Loss: {}, Avg Validation Dice Score: {}".format(epoch, train_loss_total_avg, val_loss_total_avg, dice_score_total_avg))
+    #     val_loss_total_avg = val_loss_total / num_steps
+    #     dice_score_total_avg = dice_score_total / num_steps
+    #     print("Final: Epoch: {}, Train Loss: {}, Val Loss: {}, Avg Validation Dice Score: {}".format(epoch, train_loss_total_avg, val_loss_total_avg, dice_score_total_avg))
