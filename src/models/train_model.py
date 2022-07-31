@@ -1,7 +1,7 @@
 # import modules from outside
 from loading_data import create_dataloaders
 from architecture import NoPoolASPP
-from losses import dice_loss
+from metrics import dice_score
 
 # system libraries 
 from pathlib import Path
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         num_steps += 1
 
         # if i % 1 == 0:
-        print("Training - Epoch: {}, Step: {}, Loss: {}".format(epoch, num_steps, loss.item()))
+        print("Training - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
 
         train_loss_total_avg = train_loss_total / num_steps
 
@@ -77,7 +77,7 @@ if __name__ == '__main__':
             pred = model(img)
             loss = F.binary_cross_entropy_with_logits(pred, mask.float())
             val_loss_total += loss.item()
-            print("Validation - Epoch: {}, Step: {}, Loss: {}".format(epoch, num_steps, loss.item()))
+            print("Validation - Epoch: {}, Step: {}, Loss: {}, Dice Score: {}".format(epoch, num_steps, loss.item(), dice_score(pred, mask.float())))
             num_steps += 1  
 
         val_loss_total_avg = val_loss_total / num_steps

@@ -1,4 +1,4 @@
-def dice_loss(input, target):
+def dice_score(input, target):
     """Dice loss.
 
     :param input: The input (predicted)
@@ -15,4 +15,4 @@ def dice_loss(input, target):
 
     dice = (2.0 * intersection + eps) / (union + eps)
 
-    return -dice
+    return dice
