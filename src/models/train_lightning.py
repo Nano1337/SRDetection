@@ -226,5 +226,5 @@ if __name__ == "__main__":
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers, )
 
     model = SRDetectModel()
-    trainer = pl.Trainer(accelerator="tpu", devices=8)
+    trainer = pl.Trainer(accelerator="gpu", devices=1)
     trainer.fit(model, train_loader, val_loader)
