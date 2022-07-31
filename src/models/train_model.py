@@ -124,7 +124,7 @@ if __name__ == '__main__':
 
     train_loader, val_loader, test_loader = create_dataloaders(img_dir, mask_dir, batch_size, num_workers)
     model = NoPoolASPP(drop_rate=drop_rate, bn_momentum=bn_momentum, base_num_filters=base_num_filters)
-    criterion = F.binary_cross_entropy
+    criterion = F.binary_cross_entropy_with_logits
     optimizer = optim.Adam(model.parameters(), lr=initial_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, num_epochs) # try using with warm restarts
     trainer = Trainer(
