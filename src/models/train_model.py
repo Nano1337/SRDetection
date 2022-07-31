@@ -46,7 +46,7 @@ if __name__ == '__main__':
             img, mask = batch[0].to(device), batch[1].to(device)
             optimizer.zero_grad()
             pred = model(img)
-            loss = F.binary_cross_entropy_with_logits(pred, mask)
+            loss = F.binary_cross_entropy_with_logits(pred, mask.float())
             loss.backward()
             optimizer.step()
             train_loss_total += loss.item()
@@ -64,7 +64,7 @@ if __name__ == '__main__':
         for i, batch in enumerate(val_loader):
             img, mask = batch[0].to(device), batch[1].to(device)
             pred = model(img)
-            loss = F.binary_cross_entropy_with_logits(pred, mask)
+            loss = F.binary_cross_entropy_with_logits(pred, mask.float())
             val_loss_total += loss.item()
             num_steps += 1
 
