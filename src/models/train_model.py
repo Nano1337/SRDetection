@@ -35,6 +35,7 @@ class Trainer:
         self.val_loader = val_loader
         self.epochs = epochs
         self.epoch = epoch
+
         self.train_loss = []
         self.val_loss = []
         self.learning_rate = []
@@ -63,16 +64,16 @@ class Trainer:
             loss = self.criterion(pred, target.float()) # calculate loss
             loss_value = loss.item() # get loss value
             dice_value = dice_score(pred, target.float()) # calculate dice score
-            dice_scores.append(dice_value)
-            train_losses.append(loss_value)
+            # dice_scores.append(dice_value)
+            # train_losses.append(loss_value)
             loss.backward() # backpropagate
             self.optimizer.step() # update parameters
 
             batch_iter.set_description(f"Training: (loss {loss_value:.4f}, dice {dice_value:.4f})") # update progressbar
         
-        self.train_loss.append(sum(train_losses) / len(train_losses))
-        self.learning_rate.append(self.optimizer.param_groups[0]['lr'])
-        self.dice_score_train.append(sum(dice_scores) / len(dice_scores))
+        # self.train_loss.append(sum(train_losses) / len(train_losses))
+        # self.learning_rate.append(self.optimizer.param_groups[0]['lr'])
+        # self.dice_score_train.append(sum(dice_scores) / len(dice_scores))
         batch_iter.close()
 
     def val_loop(self):
@@ -88,15 +89,14 @@ class Trainer:
                 pred = self.model(input)
                 loss = self.criterion(pred, target.float())
                 loss_value = loss.item()
-                pred = F.sigmoid(pred)
                 dice_value = dice_score(pred, target.float()) # calculate dice score
-                dice_scores.append(dice_value)
-                valid_losses.append(loss_value)
+                # dice_scores.append(dice_value)
+                # valid_losses.append(loss_value)
 
                 batch_iter.set_description(f"Validation: (loss {loss_value:.4f}, dice {dice_value:.4f})")
         
-        self.val_loss.append(sum(valid_losses) / len(valid_losses))
-        self.dice_score_val.append(sum(dice_scores) / len(dice_scores))
+        # self.val_loss.append(sum(valid_losses) / len(valid_losses))
+        # self.dice_score_val.append(sum(dice_scores) / len(dice_scores))
         batch_iter.close()
 
 if __name__ == '__main__':
